@@ -9,6 +9,7 @@
 const fs = require('fs');
 const publicResources = [
   {src: '../vendor/cubism/Core', dst: './public/Core'},
+  {src: '../assets/background', dst: './public/Background'},
   {src: '../assets/soundext', dst: './public/SfxExt'},
   {src: '../vendor/cubism/Framework/Shaders', dst: './public/Framework/Shaders'},
 ];

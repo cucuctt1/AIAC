@@ -5,3 +5,4 @@ web_renderer/public/Core/
 web_renderer/public/Framework/
 web_renderer/public/SfxExt/
 *.log
+image.png
