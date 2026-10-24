@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Suisei Live2D</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent !important; font-family: "Segoe UI", "Yu Gothic UI", Meiryo, "Noto Sans JP", sans-serif; }
+    body { position: relative; border-radius: 28px; overflow: hidden; background: #090c14; clip-path: inset(0 round 28px); }
+    #live2d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border-radius: 28px; clip-path: inset(0 round 28px); }
+    .glass { position: absolute; left: 10px; right: 10px; z-index: 2; border: 1px solid rgba(255,255,255,.16); border-radius: 18px; background: rgba(9,12,21,.76); box-shadow: 0 8px 24px rgba(0,0,0,.26), inset 0 1px rgba(255,255,255,.05); backdrop-filter: blur(10px); }
+    .input { top: 10px; height: 48px; padding: 7px 11px; }
+    #input { width: 100%; height: 100%; resize: none; border: 0; outline: 0; overflow: auto; white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; background: transparent; color: #f5f7ff; font: 14px/1.35 inherit; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.25) transparent; }
+    #input::placeholder { color: rgba(225,230,255,.52); }
+    .display { bottom: 10px; height: 142px; padding: 10px 12px; overflow: hidden; }
+    #output { width: 100%; height: 100%; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: rgba(243,245,255,.92); font: 13px/1.5 "Cascadia Code", Consolas, "Yu Gothic UI", Meiryo, "Noto Sans JP", monospace; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.25) transparent; }
+    #input::-webkit-scrollbar, #output::-webkit-scrollbar { width: 5px; height: 5px; }
+    #input::-webkit-scrollbar-track, #output::-webkit-scrollbar-track { background: transparent; }
+    #input::-webkit-scrollbar-thumb, #output::-webkit-scrollbar-thumb { background: rgba(255,255,255,.25); border-radius: 99px; }
+    #input::-webkit-scrollbar-button, #output::-webkit-scrollbar-button,
+    #input::-webkit-scrollbar-button:single-button, #output::-webkit-scrollbar-button:single-button,
+    #input::-webkit-scrollbar-button:start:decrement, #output::-webkit-scrollbar-button:start:decrement,
+    #input::-webkit-scrollbar-button:end:increment, #output::-webkit-scrollbar-button:end:increment {
+      display: none !important;
+      -webkit-appearance: none;
+      width: 0 !important;
+      height: 0 !important;
+    }
+    .message { margin: 0 0 8px; }
+    .message.user { color: rgba(150,205,255,.95); }
+    .message.assistant { color: rgba(245,247,255,.95); }
+    .message.error { color: #ff9ca8; }
+    .message.system { color: rgba(190,225,255,.78); font-style: italic; }
+    .assistant-status { position: absolute; top: 64px; right: 16px; z-index: 3; padding: 4px 9px; border: 1px solid rgba(255,255,255,.12); border-radius: 99px; background: rgba(9,12,21,.68); color: rgba(225,235,255,.75); font-size: 10px; letter-spacing: .03em; opacity: 0; transform: translateY(-3px); transition: opacity .18s ease, transform .18s ease; pointer-events: none; }
+    .assistant-status.visible { opacity: 1; transform: translateY(0); }
+    .settings-backdrop { position: absolute; inset: 0; z-index: 20; display: none; place-items: center; background: rgba(3,5,10,.48); backdrop-filter: blur(5px); }
+    .settings-backdrop.open { display: grid; }
+    .settings-panel { width: calc(100% - 34px); max-height: calc(100% - 34px); overflow-y: auto; padding: 18px; border: 1px solid rgba(255,255,255,.18); border-radius: 22px; color: #f4f6ff; background: rgba(12,15,26,.94); box-shadow: 0 18px 55px rgba(0,0,0,.55); }
+    .settings-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .settings-header h2 { margin: 0; font: 600 17px/1.2 "Segoe UI", "Yu Gothic UI", Meiryo, "Noto Sans JP", sans-serif; }
+    .setting-category { margin: 15px 0 4px; padding-bottom: 6px; border-bottom: 1px solid rgba(114,191,255,.25); color: #8dceff; font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+    .settings-header + .setting-category { margin-top: 0; }
+    .settings-close { width: 30px; height: 30px; border: 0; border-radius: 10px; color: #e9ecff; background: rgba(255,255,255,.09); cursor: pointer; }
+    .setting-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; min-height: 42px; border-top: 1px solid rgba(255,255,255,.08); font-size: 13px; }
+    .setting-row input[type="range"] { width: 132px; accent-color: #72bfff; }
+    .setting-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: #72bfff; }
+    .volume-meter { width: 132px; height: 8px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.09); box-shadow: inset 0 1px 3px rgba(0,0,0,.35); }
+    .volume-meter-fill { width: 100%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #55b9ff 0%, #83e6be 72%, #ffd36a 90%, #ff7d8c 100%); transform: scaleX(0); transform-origin: left center; transition: transform 55ms linear; }
+    .setting-stack { display: grid; gap: 6px; padding: 9px 0; border-top: 1px solid rgba(255,255,255,.08); font-size: 13px; }
+    .setting-stack input, .setting-stack select, .setting-stack textarea { width: 100%; min-height: 34px; padding: 7px 9px; border: 1px solid rgba(255,255,255,.14); border-radius: 9px; outline: none; color: #f1f4ff; background: rgba(255,255,255,.07); font: inherit; resize: vertical; }
+    .setting-stack select option { color: #111; }
+    .settings-save { width: 100%; height: 36px; margin-top: 12px; border: 0; border-radius: 10px; color: #07111d; background: #79c7ff; font-weight: 650; cursor: pointer; }
+    .settings-status { min-height: 16px; margin-top: 7px; color: rgba(190,225,255,.85); font-size: 11px; }
+    .settings-hint { margin: 13px 0 0; color: rgba(225,230,255,.55); font-size: 11px; }
+    .pack-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-top: 9px; }
+    .pack-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(225,230,255,.72); font-size: 11px; }
+    .pack-button { height: 30px; padding: 0 10px; border: 1px solid rgba(255,255,255,.15); border-radius: 9px; color: #eaf4ff; background: rgba(255,255,255,.08); cursor: pointer; }
+  </style>
+  <script src="./Core/live2dcubismcore.js"></script>
+  <script type="module" src="./src/main.ts"></script>
+</head>
+<body>
+  <canvas id="live2d" width="390" height="475"></canvas>
+  <div class="glass input"><textarea id="input" rows="1" wrap="soft" placeholder="Type a message and press Enter…"></textarea></div>
+  <div id="assistantStatus" class="assistant-status" aria-live="polite"></div>
+  <div class="glass display"><div id="output"></div></div>
+  <div id="settingsBackdrop" class="settings-backdrop">
+    <section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="settings-header"><h2 id="settingsTitle">Assistant settings</h2><button id="settingsClose" class="settings-close" aria-label="Close settings">✕</button></div>
+      <h3 class="setting-category">Audio</h3>
+      <label class="setting-row"><span>Master volume</span><input id="settingVolume" type="range" min="0" max="1" step="0.05"></label>
+      <label class="setting-row"><span>Character voice</span><input id="settingVoiceVolume" type="range" min="0" max="1" step="0.05"></label>
+      <label class="setting-row"><span>Sound effects</span><input id="settingEffectVolume" type="range" min="0" max="1" step="0.05"></label>
+      <label class="setting-row"><span>Stereo balance</span><input id="settingBalance" type="range" min="-1" max="1" step="0.05" title="Left to right"></label>
+      <div class="setting-row"><span>Output level</span><div class="volume-meter" role="meter" aria-label="Reaction sound output level" aria-valuemin="0" aria-valuemax="1"><div id="volumeMeterFill" class="volume-meter-fill"></div></div></div>
+      <h3 class="setting-category">Appearance</h3>
+      <label class="setting-row"><span>Mouse gaze strength</span><input id="settingGaze" type="range" min="0" max="1.5" step="0.05"></label>
+      <label class="setting-row"><span>Panel opacity</span><input id="settingOpacity" type="range" min="0.35" max="0.95" step="0.05"></label>
+      <label class="setting-row"><span>Chat text size</span><input id="settingTextSize" type="range" min="11" max="18" step="1"></label>
+      <h3 class="setting-category">Performance</h3>
+      <label class="setting-stack"><span>Render frame rate</span><select id="settingRenderFps"><option value="120">120 FPS</option><option value="60">60 FPS</option><option value="30">30 FPS</option><option value="15">15 FPS</option></select></label>
+      <label class="setting-row"><span>Automatically reduce FPS while idle</span><input id="settingAutoReduceFps" type="checkbox"></label>
+      <label class="setting-stack"><span>Idle frame rate</span><select id="settingReducedFps"><option value="60">60 FPS</option><option value="30">30 FPS</option><option value="15">15 FPS</option></select></label>
+      <h3 class="setting-category">Behavior</h3>
+      <label class="setting-row"><span>Idle animations</span><input id="settingIdle" type="checkbox"></label>
+      <label class="setting-row"><span>Activity reactions</span><input id="settingActivity" type="checkbox"></label>
+      <label class="setting-row"><span>Activity comments</span><input id="settingActivityComments" type="checkbox"></label>
+      <label class="setting-row"><span>AI song reactions</span><input id="settingSongReactions" type="checkbox"></label>
+      <label class="setting-row"><span>Enrich song information</span><input id="settingSongEnrichment" type="checkbox"></label>
+      <label class="setting-row"><span>Screenshot vision</span><input id="settingVision" type="checkbox"></label>
+      <label class="setting-stack"><span>Code comment frequency</span><select id="settingCodeComments"><option value="off">Off (save tokens)</option><option value="low">Low - every 30 minutes</option><option value="medium">Medium - every 15 minutes</option><option value="high">High - every 5 minutes</option></select></label>
+      <label class="setting-row"><span>Head-pat reactions</span><input id="settingPat" type="checkbox"></label>
+      <h3 class="setting-category">AI connection</h3>
+      <label class="setting-stack"><span>AI provider</span><select id="settingProvider"><option value="deepseek">DeepSeek</option><option value="gemini">Google Gemini (free tier)</option><option value="groq">Groq (free tier)</option><option value="custom">Custom OpenAI-compatible</option></select></label>
+      <label class="setting-stack"><span>Model</span><input id="settingModel" type="text" spellcheck="false"></label>
+      <label class="setting-stack"><span>API base URL</span><input id="settingBaseUrl" type="url" spellcheck="false"></label>
+      <label class="setting-stack"><span>New API key</span><input id="settingApiKey" type="password" autocomplete="off" placeholder="Leave blank to keep current key"></label>
+      <button id="settingsSaveAi" class="settings-save">Save AI connection</button>
+      <div id="settingsStatus" class="settings-status"></div>
+      <h3 class="setting-category">MCP tools</h3>
+      <label class="setting-row"><span>Enable MCP tools</span><input id="settingMcpEnabled" type="checkbox"></label>
+      <label class="setting-stack"><span>Servers (JSON)</span><textarea id="settingMcpServers" rows="6" spellcheck="false" placeholder='[{"name":"filesystem","command":"npx.cmd","args":["-y","@modelcontextprotocol/server-filesystem","D:\\\\Projects"]}]'></textarea></label>
+      <button id="settingsSaveMcp" class="settings-save">Save MCP servers</button>
+      <div id="mcpSettingsStatus" class="settings-status"></div>
+      <p class="settings-hint">Each entry supports name, command, args, cwd, env, and enabled. Tools start only when needed.</p>
+      <h3 class="setting-category">Character</h3>
+      <label class="setting-stack"><span>Character profile</span><select id="characterProfile"></select></label>
+      <div class="pack-row"><button id="createProfile" class="pack-button">New profile</button><button id="deleteProfile" class="pack-button">Delete profile</button></div>
+      <label class="setting-stack"><span>Character persona</span><textarea id="profilePersona" rows="3" placeholder="Personality and speaking style for this character"></textarea></label>
+      <button id="savePersona" class="settings-save">Save character persona</button>
+      <div class="pack-row"><span id="modelPackName" class="pack-name">Built-in Live2D model</span><button id="chooseModelPack" class="pack-button">Choose model</button></div>
+      <div class="pack-row"><span id="soundPackName" class="pack-name">Built-in sound pack</span><button id="chooseSoundPack" class="pack-button">Choose sounds</button></div>
+      <div class="pack-row"><span id="effectPackName" class="pack-name">Built-in effect pack</span><button id="chooseEffectPack" class="pack-button">Choose effects</button></div>
+      <button id="resetContentPack" class="settings-save">Restore built-in packs</button>
+      <p class="settings-hint">Choose a .model3.json file. Name reaction sounds by emotion, such as happy-01.wav or thinking-01.ogg.</p>
+    </section>
+  </div>
+  <script>
+    const canvas = document.getElementById('live2d');
+    const input = document.getElementById('input');
+    const output = document.getElementById('output');
+    const assistantStatus = document.getElementById('assistantStatus');
+    const settingsBackdrop = document.getElementById('settingsBackdrop');
+    const settingsClose = document.getElementById('settingsClose');
+    const settingVolume = document.getElementById('settingVolume');
+    const settingVoiceVolume = document.getElementById('settingVoiceVolume');
+    const settingEffectVolume = document.getElementById('settingEffectVolume');
+    const settingBalance = document.getElementById('settingBalance');
+    const volumeMeterFill = document.getElementById('volumeMeterFill');
+    const settingGaze = document.getElementById('settingGaze');
+    const settingOpacity = document.getElementById('settingOpacity');
+    const settingTextSize = document.getElementById('settingTextSize');
+    const settingRenderFps = document.getElementById('settingRenderFps');
+    const settingAutoReduceFps = document.getElementById('settingAutoReduceFps');
+    const settingReducedFps = document.getElementById('settingReducedFps');
+    const settingIdle = document.getElementById('settingIdle');
+    const settingActivity = document.getElementById('settingActivity');
+    const settingActivityComments = document.getElementById('settingActivityComments');
+    const settingSongReactions = document.getElementById('settingSongReactions');
+    const settingSongEnrichment = document.getElementById('settingSongEnrichment');
+    const settingVision = document.getElementById('settingVision');
+    const settingCodeComments = document.getElementById('settingCodeComments');
+    const settingPat = document.getElementById('settingPat');
+    const settingProvider = document.getElementById('settingProvider');
+    const modelPackName = document.getElementById('modelPackName');
+    const soundPackName = document.getElementById('soundPackName');
+    const effectPackName = document.getElementById('effectPackName');
+    const characterProfile = document.getElementById('characterProfile');
+    const profilePersona = document.getElementById('profilePersona');
+    const settingModel = document.getElementById('settingModel');
+    const settingBaseUrl = document.getElementById('settingBaseUrl');
+    const settingApiKey = document.getElementById('settingApiKey');
+    const settingsSaveAi = document.getElementById('settingsSaveAi');
+    const settingsStatus = document.getElementById('settingsStatus');
+    const settingMcpEnabled = document.getElementById('settingMcpEnabled');
+    const settingMcpServers = document.getElementById('settingMcpServers');
+    const settingsSaveMcp = document.getElementById('settingsSaveMcp');
+    const mcpSettingsStatus = document.getElementById('mcpSettingsStatus');
+    const providerPresets = {
+      deepseek: { baseUrl: 'https://api.deepseek.com', model: 'deepseek-flash' },
+      gemini: { baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-3.1-flash-lite' },
+      groq: { baseUrl: 'https://api.groq.com/openai/v1', model: 'openai/gpt-oss-20b' }
+    };
+    const initialPack = window.contentPacks.get();
+    const settingsStorageKey = 'suisei-settings:' + (initialPack.profileName || 'Default');
+    const defaultSettings = { soundVolume: 0.8, voiceVolume: 1, effectVolume: 0.75, soundBalance: 0, gazeStrength: 1, panelOpacity: 0.76, textSize: 13, renderFps: 30, autoReduceFps: true, reducedFps: 15, idleAnimations: true, activityReactions: true, activityComments: true, songReactions: true, songEnrichment: true, visionEnabled: true, codeCommentFrequency: 'medium', patReactions: true };
+    let appSettings = { ...defaultSettings };
+    let runtimeMuted = false;
+    let runtimeReactionsPaused = false;
+
+    try {
+      const legacy = localStorage.getItem('suisei-settings');
+      appSettings = { ...defaultSettings, ...JSON.parse(localStorage.getItem(settingsStorageKey) || legacy || '{}') };
+    } catch {}
+
+    function applySettings() {
+      settingVolume.value = appSettings.soundVolume;
+      settingVoiceVolume.value = appSettings.voiceVolume;
+      settingEffectVolume.value = appSettings.effectVolume;
+      settingBalance.value = appSettings.soundBalance;
+      settingGaze.value = appSettings.gazeStrength;
+      settingOpacity.value = appSettings.panelOpacity;
+      settingTextSize.value = appSettings.textSize;
+      settingRenderFps.value = String(appSettings.renderFps);
+      settingAutoReduceFps.checked = appSettings.autoReduceFps;
+      settingReducedFps.value = String(appSettings.reducedFps);
+      settingReducedFps.disabled = !appSettings.autoReduceFps;
+      document.documentElement.dataset.renderFps = String(appSettings.renderFps);
+      document.documentElement.dataset.autoReduceFps = String(appSettings.autoReduceFps);
+      document.documentElement.dataset.reducedFps = String(appSettings.reducedFps);
+      settingIdle.checked = appSettings.idleAnimations;
+      settingActivity.checked = appSettings.activityReactions;
+      settingActivityComments.checked = appSettings.activityComments;
+      settingSongReactions.checked = appSettings.songReactions;
+      settingSongEnrichment.checked = appSettings.songEnrichment;
+      settingVision.checked = appSettings.visionEnabled;
+      settingCodeComments.value = appSettings.codeCommentFrequency;
+      settingPat.checked = appSettings.patReactions;
+      document.documentElement.style.setProperty('--panel-opacity', appSettings.panelOpacity);
+      output.style.fontSize = appSettings.textSize + 'px';
+      document.querySelectorAll('.glass').forEach(element => {
+        element.style.backgroundColor = 'rgba(9,12,21,' + appSettings.panelOpacity + ')';
+      });
+      localStorage.setItem(settingsStorageKey, JSON.stringify(appSettings));
+      window.dispatchEvent(new CustomEvent('assistant-settings-change', { detail: { ...appSettings, soundVolume: runtimeMuted ? 0 : appSettings.soundVolume, reactionsPaused: runtimeReactionsPaused } }));
+    }
+
+    function detectProvider(baseUrl) {
+      if (baseUrl.includes('deepseek.com')) return 'deepseek';
+      if (baseUrl.includes('generativelanguage.googleapis.com')) return 'gemini';
+      if (baseUrl.includes('groq.com')) return 'groq';
+      return 'custom';
+    }
+    async function loadAiSettings() {
+      const connection = await window.assistant.getAiSettings();
+      settingProvider.value = detectProvider(connection.baseUrl);
+      settingModel.value = connection.model || '';
+      settingBaseUrl.value = connection.baseUrl || '';
+      settingApiKey.value = '';
+      settingApiKey.placeholder = connection.hasApiKey ? 'Key saved — leave blank to keep it' : 'Enter an API key';
+    }
+    async function loadMcpSettings() {
+      const mcp = await window.assistant.getMcpSettings();
+      settingMcpEnabled.checked = mcp.enabled === true;
+      settingMcpServers.value = JSON.stringify(mcp.servers || [], null, 2);
+      mcpSettingsStatus.textContent = mcp.enabled ? `${mcp.servers.length} server(s) configured.` : 'MCP is off.';
+    }
+    function loadContentPackSettings() {
+      const pack = window.contentPacks.get();
+      characterProfile.replaceChildren(...pack.profiles.map(name => new Option(name, name, false, name === pack.profileName)));
+      profilePersona.value = pack.personaPrompt || '';
+      modelPackName.textContent = pack.model ? pack.model.name : 'Built-in Live2D model';
+      modelPackName.title = pack.modelPath || '';
+      soundPackName.textContent = pack.soundDirectory ? pack.soundDirectory.split(/[\\/]/).pop() : 'Built-in sound pack';
+      soundPackName.title = pack.soundDirectory || '';
+      effectPackName.textContent = pack.effectDirectory ? pack.effectDirectory.split(/[\\/]/).pop() : 'Built-in effect pack';
+      effectPackName.title = pack.effectDirectory || '';
+    }
+    async function openSettings() {
+      applySettings();
+      loadContentPackSettings();
+      settingsStatus.textContent = '';
+      try { await Promise.all([loadAiSettings(), loadMcpSettings()]); } catch (error) { settingsStatus.textContent = error.message; }
+      settingsBackdrop.classList.add('open');
+    }
+    function closeSettings() {
+      settingsBackdrop.classList.remove('open');
+      input.focus();
+    }
+    settingsClose.addEventListener('click', closeSettings);
+    settingsBackdrop.addEventListener('mousedown', event => {
+      if (event.target === settingsBackdrop) closeSettings();
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && settingsBackdrop.classList.contains('open')) closeSettings();
+    });
+    settingVolume.addEventListener('input', () => { appSettings.soundVolume = Number(settingVolume.value); applySettings(); });
+    settingVoiceVolume.addEventListener('input', () => { appSettings.voiceVolume = Number(settingVoiceVolume.value); applySettings(); });
+    settingEffectVolume.addEventListener('input', () => { appSettings.effectVolume = Number(settingEffectVolume.value); applySettings(); });
+    settingBalance.addEventListener('input', () => { appSettings.soundBalance = Number(settingBalance.value); applySettings(); });
+    window.addEventListener('assistant-volume-level', event => {
+      const level = Math.max(0, Math.min(1, Number(event.detail?.level) || 0));
+      volumeMeterFill.style.transform = `scaleX(${level})`;
+      volumeMeterFill.parentElement.setAttribute('aria-valuenow', level.toFixed(2));
+    });
+    settingGaze.addEventListener('input', () => { appSettings.gazeStrength = Number(settingGaze.value); applySettings(); });
+    settingOpacity.addEventListener('input', () => { appSettings.panelOpacity = Number(settingOpacity.value); applySettings(); });
+    settingTextSize.addEventListener('input', () => { appSettings.textSize = Number(settingTextSize.value); applySettings(); });
+    settingRenderFps.addEventListener('change', () => { appSettings.renderFps = Number(settingRenderFps.value); applySettings(); });
+    settingAutoReduceFps.addEventListener('change', () => { appSettings.autoReduceFps = settingAutoReduceFps.checked; applySettings(); });
+    settingReducedFps.addEventListener('change', () => { appSettings.reducedFps = Number(settingReducedFps.value); applySettings(); });
+    settingIdle.addEventListener('change', () => { appSettings.idleAnimations = settingIdle.checked; applySettings(); });
+    settingActivity.addEventListener('change', () => { appSettings.activityReactions = settingActivity.checked; applySettings(); });
+    settingActivityComments.addEventListener('change', () => { appSettings.activityComments = settingActivityComments.checked; applySettings(); });
+    settingSongReactions.addEventListener('change', () => { appSettings.songReactions = settingSongReactions.checked; applySettings(); });
+    settingSongEnrichment.addEventListener('change', () => { appSettings.songEnrichment = settingSongEnrichment.checked; applySettings(); });
+    settingVision.addEventListener('change', () => { appSettings.visionEnabled = settingVision.checked; applySettings(); });
+    settingCodeComments.addEventListener('change', () => { appSettings.codeCommentFrequency = settingCodeComments.value; applySettings(); });
+    settingPat.addEventListener('change', () => { appSettings.patReactions = settingPat.checked; applySettings(); });
+    settingProvider.addEventListener('change', () => {
+      const preset = providerPresets[settingProvider.value];
+      if (!preset) return;
+      settingBaseUrl.value = preset.baseUrl;
+      settingModel.value = preset.model;
+      window.assistant.hasApiKey(settingBaseUrl.value).then(saved => { settingApiKey.placeholder = saved ? 'Key saved — leave blank to keep it' : 'Enter an API key'; });
+    });
+    settingBaseUrl.addEventListener('change', () => window.assistant.hasApiKey(settingBaseUrl.value).then(saved => { settingApiKey.placeholder = saved ? 'Key saved — leave blank to keep it' : 'Enter an API key'; }));
+    characterProfile.addEventListener('change', () => window.contentPacks.selectProfile(characterProfile.value));
+    document.getElementById('createProfile').addEventListener('click', async () => {
+      const name = prompt('New character profile name:');
+      if (name) try { await window.contentPacks.createProfile(name); } catch (error) { settingsStatus.textContent = error.message; }
+    });
+    document.getElementById('deleteProfile').addEventListener('click', async () => {
+      try { await window.contentPacks.deleteProfile(); } catch (error) { settingsStatus.textContent = error.message; }
+    });
+    document.getElementById('savePersona').addEventListener('click', async () => {
+      try { await window.contentPacks.savePersona(profilePersona.value); settingsStatus.textContent = 'Character persona saved.'; } catch (error) { settingsStatus.textContent = error.message; }
+    });
+    settingsSaveAi.addEventListener('click', async () => {
+      settingsSaveAi.disabled = true;
+      settingsStatus.textContent = 'Saving…';
+      try {
+        const saved = await window.assistant.saveAiSettings({
+          baseUrl: settingBaseUrl.value,
+          model: settingModel.value,
+          apiKey: settingApiKey.value
+        });
+        settingApiKey.value = '';
+        settingApiKey.placeholder = saved.hasApiKey ? 'Key saved — leave blank to keep it' : 'Enter an API key';
+        settingsStatus.textContent = 'Saved. New messages will use ' + saved.model + '.';
+      } catch (error) {
+        settingsStatus.textContent = error.message || 'Could not save settings.';
+      } finally {
+        settingsSaveAi.disabled = false;
+      }
+    });
+    settingsSaveMcp.addEventListener('click', async () => {
+      settingsSaveMcp.disabled = true;
+      mcpSettingsStatus.textContent = 'Savingâ€¦';
+      try {
+        const servers = JSON.parse(settingMcpServers.value || '[]');
+        if (!Array.isArray(servers)) throw new Error('Servers JSON must be an array.');
+        const saved = await window.assistant.saveMcpSettings({ enabled: settingMcpEnabled.checked, servers, timeoutMs: 10000, maxTools: 40 });
+        settingMcpServers.value = JSON.stringify(saved.servers, null, 2);
+        mcpSettingsStatus.textContent = saved.enabled ? `Saved ${saved.servers.length} MCP server(s).` : 'MCP saved and disabled.';
+      } catch (error) {
+        mcpSettingsStatus.textContent = error.message || 'Could not save MCP settings.';
+      } finally {
+        settingsSaveMcp.disabled = false;
+      }
+    });
+    document.getElementById('chooseModelPack').addEventListener('click', async () => {
+      settingsStatus.textContent = 'Opening model picker…';
+      try { await window.contentPacks.chooseModel(); } catch (error) { settingsStatus.textContent = error.message; }
+    });
+    document.getElementById('chooseSoundPack').addEventListener('click', async () => {
+      settingsStatus.textContent = 'Opening sound folder picker…';
+      try { await window.contentPacks.chooseSounds(); } catch (error) { settingsStatus.textContent = error.message; }
+    });
+    document.getElementById('chooseEffectPack').addEventListener('click', async () => {
+      settingsStatus.textContent = 'Opening effect folder picker…';
+      try { await window.contentPacks.chooseEffects(); } catch (error) { settingsStatus.textContent = error.message; }
+    });
+    document.getElementById('resetContentPack').addEventListener('click', async () => {
+      settingsStatus.textContent = 'Restoring built-in packs…';
+      try { await window.contentPacks.reset(); } catch (error) { settingsStatus.textContent = error.message; }
+    });
+    requestAnimationFrame(applySettings);
+
+    const caretMirror = document.createElement('div');
+    const caretMarker = document.createElement('span');
+    caretMarker.textContent = '\u200b';
+    Object.assign(caretMirror.style, {
+      position: 'fixed', left: '-10000px', top: '0', visibility: 'hidden',
+      pointerEvents: 'none', whiteSpace: 'pre-wrap', overflowWrap: 'break-word'
+    });
+    document.body.appendChild(caretMirror);
+
+    function focusCaret() {
+      if (document.activeElement !== input) return;
+      const style = getComputedStyle(input);
+      const rect = input.getBoundingClientRect();
+      const mirroredProperties = [
+        'boxSizing', 'fontFamily', 'fontSize', 'fontStyle', 'fontWeight',
+        'letterSpacing', 'lineHeight', 'paddingTop', 'paddingRight',
+        'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderRightWidth',
+        'borderBottomWidth', 'borderLeftWidth', 'tabSize', 'textTransform'
+      ];
+      for (const property of mirroredProperties) caretMirror.style[property] = style[property];
+      caretMirror.style.width = `${input.clientWidth}px`;
+      caretMirror.replaceChildren();
+      const beforeCaret = input.value.slice(0, input.selectionStart ?? input.value.length);
+      caretMirror.append(document.createTextNode(beforeCaret), caretMarker);
+      const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.35;
+      const caretX = rect.left + caretMarker.offsetLeft - input.scrollLeft;
+      const caretY = rect.top + caretMarker.offsetTop - input.scrollTop + lineHeight / 2;
+      window.live2d.pointer(
+        Math.max(rect.left, Math.min(rect.right, caretX)),
+        Math.max(rect.top, Math.min(rect.bottom, caretY)),
+        true
+      );
+    }
+
+    let pendingPointer = null;
+    let pointerFrame = 0;
+    document.addEventListener('mousemove', (event) => {
+      if (document.activeElement === input) return;
+      pendingPointer = { x: event.clientX, y: event.clientY };
+      if (pointerFrame) return;
+      pointerFrame = requestAnimationFrame(() => {
+        pointerFrame = 0;
+        if (pendingPointer) window.live2d.pointer(pendingPointer.x, pendingPointer.y, true);
+        pendingPointer = null;
+      });
+    }, { passive: true });
+    document.addEventListener('mouseleave', () => {
+      if (document.activeElement !== input) window.live2d.pointer(0, 0, false);
+    });
+    let middleDragging = false;
+    document.addEventListener('mousedown', event => {
+      if (event.button !== 1) return;
+      event.preventDefault();
+      event.stopPropagation();
+      middleDragging = true;
+      window.live2d.dragStart();
+    }, true);
+    document.addEventListener('mousemove', event => {
+      if (!middleDragging) return;
+      event.preventDefault();
+      window.live2d.dragMove();
+    }, true);
+    const endMiddleDrag = event => {
+      if (!middleDragging || (event && event.button !== 1)) return;
+      middleDragging = false;
+      window.live2d.dragEnd();
+    };
+    document.addEventListener('mouseup', endMiddleDrag, true);
+    window.addEventListener('blur', () => endMiddleDrag());
+    document.addEventListener('auxclick', event => { if (event.button === 1) { event.preventDefault(); event.stopPropagation(); } }, true);
+
+    let pointerDown = null;
+    let pointerTrail = [];
+    let interactionCooldownUntil = 0;
+    let lastUserInputAt = performance.now();
+    const reactToInteraction = (type, detail = {}) => {
+      if (runtimeReactionsPaused || performance.now() < interactionCooldownUntil) return;
+      interactionCooldownUntil = performance.now() + 1800;
+      window.dispatchEvent(new CustomEvent('assistant-interaction', { detail: { type, ...detail } }));
+    };
+    document.addEventListener('mousedown', event => {
+      lastUserInputAt = performance.now();
+      if (event.button === 0) pointerDown = { x: event.clientX, y: event.clientY, time: performance.now() };
+    });
+    document.addEventListener('mouseup', event => {
+      if (event.button !== 0 || !pointerDown) return;
+      const moved = Math.hypot(event.clientX - pointerDown.x, event.clientY - pointerDown.y);
+      const elapsed = performance.now() - pointerDown.time;
+      pointerDown = null;
+      if (moved > 8 || elapsed > 500 || event.target.closest('.glass, .settings-backdrop')) return;
+      const x = event.clientX / innerWidth;
+      const y = event.clientY / innerHeight;
+      if (y > .12 && y < .30 && x > .2 && x < .8) reactToInteraction('head-click');
+      else if (y >= .30 && y < .50 && x > .28 && x < .72) window.assistant.kiss();
+      else if ((x < .23 || x > .77) && y > .25 && y < .72) reactToInteraction('accessory-click');
+      else if (y > .42 && y < .82) reactToInteraction('body-click');
+    });
+    document.addEventListener('mousemove', event => {
+      const now = performance.now();
+      lastUserInputAt = now;
+      pointerTrail.push({ x: event.clientX, y: event.clientY, time: now });
+      pointerTrail = pointerTrail.filter(point => now - point.time < 650).slice(-32);
+      if (pointerTrail.length >= 8) {
+        let distance = 0;
+        for (let i = 1; i < pointerTrail.length; i++) distance += Math.hypot(pointerTrail[i].x - pointerTrail[i - 1].x, pointerTrail[i].y - pointerTrail[i - 1].y);
+        const first = pointerTrail[0];
+        const closed = Math.hypot(event.clientX - first.x, event.clientY - first.y) < 42;
+        if (closed && distance > 260) { pointerTrail = []; reactToInteraction('circle'); }
+        else if (distance > 360 && now - first.time < 420) { pointerTrail = []; reactToInteraction('rapid-cursor'); }
+      }
+      const faceDistance = Math.hypot(event.clientX - innerWidth * .5, event.clientY - innerHeight * .34);
+      if (faceDistance < 48) reactToInteraction('face-near');
+      else if (faceDistance < 105) window.dispatchEvent(new CustomEvent('assistant-proximity', { detail: { zone: 'near' } }));
+    });
+
+    let patStartedAt = 0;
+    let patLastX = 0;
+    let patDirection = 0;
+    let patReversals = 0;
+    let patDistance = 0;
+    let patCooldownUntil = 0;
+
+    document.addEventListener('mousedown', event => {
+      if (event.button !== 0 || event.clientY < 62 || event.clientY > 225
+        || event.clientX < 70 || event.clientX > 320) return;
+      patStartedAt = performance.now();
+      patLastX = event.clientX;
+      patDirection = 0;
+      patReversals = 0;
+      patDistance = 0;
+    });
+
+    document.addEventListener('mousemove', event => {
+      if (!(event.buttons & 1) || !patStartedAt || performance.now() < patCooldownUntil) return;
+      if (event.clientY < 62 || event.clientY > 235 || performance.now() - patStartedAt > 1400) {
+        patStartedAt = 0;
+        return;
+      }
+      const delta = event.clientX - patLastX;
+      if (Math.abs(delta) < 2) return;
+      const direction = Math.sign(delta);
+      if (patDirection && direction !== patDirection && Math.abs(delta) >= 3) patReversals++;
+      patDirection = direction;
+      patDistance += Math.abs(delta);
+      patLastX = event.clientX;
+      if (patReversals >= 3 && patDistance >= 90) {
+        patStartedAt = 0;
+        patCooldownUntil = performance.now() + 8000;
+        if (!appSettings.patReactions) return;
+        input.blur();
+        window.live2d.pointer(canvas.clientWidth * 0.5, canvas.clientHeight * 0.72, true);
+        window.dispatchEvent(new CustomEvent('assistant-head-pat'));
+        window.assistant.pat();
+      }
+    });
+
+    document.addEventListener('mouseup', event => {
+      if (event.button === 0) patStartedAt = 0;
+    });
+
+    input.addEventListener('focus', focusCaret);
+    input.addEventListener('click', focusCaret);
+    input.addEventListener('keyup', focusCaret);
+    input.addEventListener('input', () => requestAnimationFrame(focusCaret));
+    input.addEventListener('scroll', focusCaret);
+    document.addEventListener('selectionchange', focusCaret);
+
+    let assistantLine = null;
+    let assistantTextNode = null;
+    let scrollFrame = 0;
+    let spokenText = '';
+    let firstSpokenTokenAt = 0;
+    let speakingTimer = 0;
+    let windowActionTimer = 0;
+    let pendingWindowAction = 'none';
+    let statusTimer = 0;
+    let typingActive = false;
+    let typingTimer = 0;
+    let typingSamples = [];
+    let lastActivityCommentAt = 0;
+    let awayStartedAt = 0;
+    let lateNightReacted = false;
+    const sessionStartedAt = Date.now();
+    let longSessionReacted = false;
+    let lastMediaTrack = '';
+    let initialMusicCommented = false;
+    let lastCodeCommentAt = 0;
+    let interactionLanguage = localStorage.getItem('suisei-interaction-language') || 'en';
+    const interactionText = {
+      en: { speaking: 'Speaking', weather: 'Checking weather', opening: 'Opening app', tool: 'Using tool', music: 'Vibing ♪', browsing: 'Curious', coding: 'Watching closely', gaming: 'Cheering', idle: 'Idle', error: 'Error', stopped: 'Stopped', thinking: 'Thinking' },
+      ja: { speaking: 'おしゃべり中', weather: '天気を確認中', opening: 'アプリを起動中', tool: '操作中', music: 'ノリノリ ♪', browsing: '気になる〜', coding: 'じーっと見守り中', gaming: '応援中', idle: 'のんびり', error: 'エラー', stopped: 'ストップ', thinking: '考え中' }
+    };
+    const uiText = key => (interactionText[interactionLanguage] || interactionText.en)[key] || key;
+    function rememberInteractionLanguage(text) {
+      const japanese = (String(text).match(/[\u3040-\u30ff\u3400-\u9fff]/g) || []).length;
+      const latin = (String(text).match(/[A-Za-zÀ-ỹ]/g) || []).length;
+      interactionLanguage = japanese >= 3 && japanese > latin ? 'ja' : 'en';
+      localStorage.setItem('suisei-interaction-language', interactionLanguage);
+    }
+
+    function setStatus(text, autoHide = false) {
+      window.clearTimeout(statusTimer);
+      assistantStatus.textContent = text;
+      assistantStatus.classList.toggle('visible', Boolean(text));
+      if (text && autoHide) statusTimer = window.setTimeout(() => setStatus(''), 1200);
+    }
+
+    function appendSystemMessage(text) {
+      const line = document.createElement('div');
+      line.className = 'message system';
+      line.textContent = text;
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function estimateTalkingMilliseconds(text) {
+      const speakingTimeMultiplier = 0.72;
+      const cjkCharacters = (text.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g) || []).length;
+      const latinWords = (text.replace(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g, ' ').match(/[\p{L}\p{N}']+/gu) || []).length;
+      const shortPauses = (text.match(/[,;:，、；：]/g) || []).length;
+      const longPauses = (text.match(/[.!?。！？\n]/g) || []).length;
+      const seconds = 0.45 + cjkCharacters * 0.17 + latinWords * 0.34 + shortPauses * 0.16 + longPauses * 0.32;
+      return Math.max(900, Math.min(22000, seconds * speakingTimeMultiplier * 1000));
+    }
+
+    function finishSpeaking(immediate = false) {
+      window.clearTimeout(speakingTimer);
+      const elapsed = firstSpokenTokenAt ? performance.now() - firstSpokenTokenAt : 0;
+      const remaining = immediate ? 0 : Math.max(0, estimateTalkingMilliseconds(spokenText) - elapsed);
+      speakingTimer = window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('assistant-speaking-end'));
+      }, remaining);
+      return remaining;
+    }
+
+    function endTypingReaction() {
+      window.clearTimeout(typingTimer);
+      if (!typingActive) return;
+      typingActive = false;
+      window.dispatchEvent(new CustomEvent('assistant-user-typing-end'));
+    }
+
+    input.addEventListener('input', () => {
+      const now = performance.now();
+      typingSamples.push(now);
+      typingSamples = typingSamples.filter(time => now - time < 1800);
+      if (typingSamples.length >= 6) {
+        const rate = typingSamples.length / Math.max(.2, (now - typingSamples[0]) / 1000);
+        window.dispatchEvent(new CustomEvent('assistant-typing-rhythm', { detail: { rate } }));
+      }
+      if (input.value && !typingActive) {
+        typingActive = true;
+        window.dispatchEvent(new CustomEvent('assistant-user-typing-start'));
+      }
+      window.clearTimeout(typingTimer);
+      if (input.value) typingTimer = window.setTimeout(endTypingReaction, 1400);
+      else endTypingReaction();
+    });
+
+    window.assistant.onStart(() => {
+      input.blur();
+      spokenText = '';
+      firstSpokenTokenAt = 0;
+      window.clearTimeout(speakingTimer);
+      window.clearTimeout(windowActionTimer);
+      pendingWindowAction = 'none';
+      window.dispatchEvent(new CustomEvent('assistant-speaking-start'));
+      setStatus(uiText('speaking'));
+      assistantLine = document.createElement('div');
+      assistantLine.className = 'message assistant';
+      assistantTextNode = document.createTextNode('');
+      assistantLine.appendChild(assistantTextNode);
+      output.appendChild(assistantLine);
+    });
+    window.assistant.onAction(action => {
+      if (action?.phase === 'speaking') pendingWindowAction = ['hide', 'exit'].includes(action.windowAction) ? action.windowAction : 'none';
+      window.dispatchEvent(new CustomEvent('assistant-action', { detail: action }));
+    });
+    window.assistant.onTool(tool => {
+      if (tool.status === 'running') {
+        setStatus(tool.name === 'weather' ? uiText('weather') : tool.name === 'open_app' ? uiText('opening') : uiText('tool'));
+        window.dispatchEvent(new CustomEvent('assistant-action', { detail: { intent: 'thinking', intensity: 0.48, playSound: false, phase: 'thinking' } }));
+      }
+    });
+    window.assistant.onOpenSettings(openSettings);
+    window.assistant.onRuntimeControls(controls => {
+      runtimeMuted = controls.muted === true;
+      runtimeReactionsPaused = controls.reactionsPaused === true;
+      applySettings();
+    });
+    window.assistant.onUserActivity(activity => {
+      if (!appSettings.activityReactions || runtimeReactionsPaused) return;
+      const activityStatus = { music: uiText('music'), browsing: uiText('browsing'), coding: uiText('coding'), gaming: uiText('gaming') };
+      setStatus(activityStatus[activity.kind] || uiText('idle'), activity.kind !== 'music');
+      window.dispatchEvent(new CustomEvent('assistant-user-activity', { detail: activity }));
+      if (appSettings.activityComments && activity.previousKind && activity.previousKind !== activity.kind
+        && Date.now() - lastActivityCommentAt > 600000) {
+        const comments = interactionLanguage === 'ja'
+          ? { music: 'おっ、音楽タイム？ 私もノる〜 ♪', browsing: '今度は何を探してるの〜？', coding: 'またコード？ 新しいバグを召喚しないでよね。', gaming: 'ゲームだ！ しょうがないな〜、応援してあげる。' }
+          : { music: 'Ooh, music time? I’m vibing too ♪', browsing: 'What are we looking for now?', coding: 'Back to code? Try not to summon any new bugs.', gaming: 'Game time! Fine, I’ll cheer for you.' };
+        const comment = comments[activity.kind];
+        if (comment) { lastActivityCommentAt = Date.now(); appendSystemMessage(comment); }
+      }
+      if (activity.kind === 'coding' && appSettings.codeCommentFrequency !== 'off') {
+        const intervals = { low: 1800000, medium: 900000, high: 300000 };
+        const interval = intervals[appSettings.codeCommentFrequency] || intervals.medium;
+        if (Date.now() - lastCodeCommentAt >= interval) {
+          lastCodeCommentAt = Date.now();
+          window.assistant.codeComment({ context: activity.context || '', language: interactionLanguage });
+        }
+      }
+    });
+    window.assistant.onMediaState(state => {
+      window.dispatchEvent(new CustomEvent('assistant-media-state', { detail: state }));
+      if (!state.playing || !state.isSong) {
+        if (assistantStatus.textContent.startsWith('Vibing') || assistantStatus.textContent.startsWith('ノリノリ')) setStatus(uiText('idle'), true);
+        return;
+      }
+      const track = [state.title, state.artist].filter(Boolean).join(' — ');
+      setStatus(track ? `${uiText('music')} ${track}` : uiText('music'));
+      const isFirstSong = !initialMusicCommented;
+      const changedSong = Boolean(track && lastMediaTrack && track !== lastMediaTrack);
+      if (isFirstSong) initialMusicCommented = true;
+      if ((isFirstSong || changedSong) && appSettings.songReactions) {
+        window.assistant.mediaReaction({ changed: changedSong, language: interactionLanguage, enrich: appSettings.songEnrichment });
+      }
+      if (isFirstSong || changedSong) reactToInteraction('track-change');
+      lastMediaTrack = track;
+    });
+    window.assistant.onDragReaction(reaction => {
+      reactToInteraction(reaction.repeated ? 'repeated-drag' : reaction.speed > 1.4 ? 'fast-drag-release' : 'drag-release', reaction);
+    });
+    window.assistant.onBehaviorSequence(sequence => {
+      if (!Array.isArray(sequence) || runtimeReactionsPaused) return;
+      for (const [index, step] of sequence.slice(0, 4).entries()) {
+        const delay = Math.max(index * 2400, Math.min(15000, Number(step.delayMs) || 0));
+        window.setTimeout(() => reactToInteraction(String(step.type || ''), step.detail || {}), delay);
+      }
+    });
+    window.addEventListener('assistant-vibing-end', () => setStatus(uiText('idle'), true));
+
+    window.addEventListener('blur', () => { awayStartedAt = Date.now(); });
+    window.addEventListener('focus', () => {
+      if (awayStartedAt && Date.now() - awayStartedAt > 300000) reactToInteraction('welcome-back', { awayMs: Date.now() - awayStartedAt });
+      awayStartedAt = 0;
+    });
+    window.setInterval(() => {
+      const inactiveMs = performance.now() - lastUserInputAt;
+      if (inactiveMs > 900000) { lastUserInputAt = performance.now(); reactToInteraction('stretch'); }
+      const hour = new Date().getHours();
+      if ((hour >= 23 || hour < 5) && inactiveMs < 120000 && !lateNightReacted) { lateNightReacted = true; reactToInteraction('late-night'); }
+      if (hour >= 6 && hour < 22) lateNightReacted = false;
+      if (!longSessionReacted && Date.now() - sessionStartedAt > 7200000) { longSessionReacted = true; reactToInteraction('long-session'); }
+    }, 60000);
+    window.assistant.onDelta(text => {
+      if (!assistantLine) return;
+      if (!firstSpokenTokenAt) firstSpokenTokenAt = performance.now();
+      spokenText += text;
+      assistantTextNode.appendData(text);
+      window.dispatchEvent(new CustomEvent('assistant-speaking-progress', {
+        detail: { characters: spokenText.length, text: spokenText }
+      }));
+      if (!scrollFrame) {
+        scrollFrame = requestAnimationFrame(() => {
+          output.scrollTop = output.scrollHeight;
+          scrollFrame = 0;
+        });
+      }
+    });
+    window.assistant.onEnd(() => {
+      const remaining = finishSpeaking(false);
+      const action = pendingWindowAction;
+      pendingWindowAction = 'none';
+      if (action !== 'none') {
+        windowActionTimer = window.setTimeout(() => {
+          if (action === 'exit') window.assistant.exit();
+          else window.assistant.hide();
+        }, remaining + 350);
+      }
+      setStatus(uiText('idle'), true);
+      assistantLine = null;
+      assistantTextNode = null;
+    });
+    window.assistant.onError(message => {
+      window.clearTimeout(windowActionTimer);
+      pendingWindowAction = 'none';
+      finishSpeaking(true);
+      setStatus(uiText('error'), true);
+      const line = document.createElement('div');
+      line.className = 'message error';
+      line.textContent = message;
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+      assistantLine = null;
+      assistantTextNode = null;
+    });
+    window.assistant.onCancelled(() => {
+      window.clearTimeout(windowActionTimer);
+      pendingWindowAction = 'none';
+      finishSpeaking(true);
+      setStatus(uiText('stopped'), true);
+      assistantLine = null;
+      assistantTextNode = null;
+    });
+    window.assistant.onStartup(text => {
+      const greeting = String(text || '').trim();
+      if (!greeting) return;
+      input.blur();
+      spokenText = greeting;
+      firstSpokenTokenAt = performance.now();
+      setStatus(uiText('speaking'));
+      const line = document.createElement('div');
+      line.className = 'message assistant';
+      line.textContent = greeting;
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+      window.dispatchEvent(new CustomEvent('assistant-speaking-start'));
+      window.dispatchEvent(new CustomEvent('assistant-action', { detail: { intent: 'greeting', intensity: 0.75, playSound: true, phase: 'speaking' } }));
+      window.dispatchEvent(new CustomEvent('assistant-speaking-progress', { detail: { characters: greeting.length, text: greeting } }));
+      window.setTimeout(() => setStatus(uiText('idle'), true), estimateTalkingMilliseconds(greeting));
+      finishSpeaking(false);
+    });
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' || event.shiftKey) return;
+      event.preventDefault();
+      endTypingReaction();
+      const value = input.value.trim();
+      if (!value) return;
+      rememberInteractionLanguage(value);
+      if (value === '/setting') {
+        input.value = '';
+        openSettings();
+        return;
+      }
+      if (value === '/exit') {
+        input.value = '';
+        window.assistant.exit();
+        return;
+      }
+      const commandMatch = value.match(/^\/(stop|clear|memory|remember|forget|sync_model|mcp)(?:\s+([\s\S]+))?$/i);
+      if (commandMatch) {
+        input.value = '';
+        input.blur();
+        const command = commandMatch[1].toLowerCase();
+        if (command === 'sync_model') {
+          setStatus('Syncing model map…');
+          appendSystemMessage('Analyzing the active model and asking the AI to map its expressions and motions…');
+        }
+        if (command === 'remember' && !commandMatch[2]) {
+          appendSystemMessage('Usage: /remember something about you');
+          return;
+        }
+        window.assistant.command(command, commandMatch[2] || '').then(result => {
+          if (result.clearOutput) output.replaceChildren();
+          appendSystemMessage(result.message);
+          if (command === 'sync_model') setStatus(uiText('idle'), true);
+          if (result.reload) window.setTimeout(() => location.reload(), 700);
+        }).catch(error => appendSystemMessage(error.message));
+        return;
+      }
+      input.blur();
+      const line = document.createElement('div');
+      line.className = 'message user';
+      line.textContent = value;
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+      input.value = '';
+      setStatus(uiText('thinking'));
+      window.assistant.send(value, { visionEnabled: appSettings.visionEnabled });
+    });
+  </script>
+</body>
+</html>

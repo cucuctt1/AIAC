@@ -1,0 +1,811 @@
+{
+  "schemaVersion": 1,
+  "model": null,
+  "pathsAreRelativeToApp": true,
+  "counts": {
+    "expressions": 0,
+    "motions": 0,
+    "sounds": 0,
+    "effects": 38
+  },
+  "expressions": [],
+  "motions": [],
+  "sounds": [],
+  "effects": [
+    {
+      "id": "se_adv_eff_angry-000_01",
+      "file": "./SfxExt/se_adv_eff_angry-000_01.wav",
+      "category": "angry",
+      "durationSeconds": 0.449,
+      "tags": [
+        "effect",
+        "angry"
+      ]
+    },
+    {
+      "id": "se_adv_eff_angry-000_02",
+      "file": "./SfxExt/se_adv_eff_angry-000_02.wav",
+      "category": "angry",
+      "durationSeconds": 0.293,
+      "tags": [
+        "effect",
+        "angry"
+      ]
+    },
+    {
+      "id": "se_adv_eff_angry-001-02",
+      "file": "./SfxExt/se_adv_eff_angry-001-02.wav",
+      "category": "angry",
+      "durationSeconds": 1.25,
+      "tags": [
+        "effect",
+        "angry"
+      ]
+    },
+    {
+      "id": "se_adv_eff_angry-001_01",
+      "file": "./SfxExt/se_adv_eff_angry-001_01.wav",
+      "category": "angry",
+      "durationSeconds": 0.625,
+      "tags": [
+        "effect",
+        "angry"
+      ]
+    },
+    {
+      "id": "se_adv_eff_cry-000_01",
+      "file": "./SfxExt/se_adv_eff_cry-000_01.wav",
+      "category": "cry",
+      "durationSeconds": 1,
+      "tags": [
+        "effect",
+        "cry"
+      ]
+    },
+    {
+      "id": "se_adv_eff_doya-000_01",
+      "file": "./SfxExt/se_adv_eff_doya-000_01.wav",
+      "category": "doya",
+      "durationSeconds": 1.189,
+      "tags": [
+        "effect",
+        "doya"
+      ]
+    },
+    {
+      "id": "se_adv_eff_dozing-000_01",
+      "file": "./SfxExt/se_adv_eff_dozing-000_01.wav",
+      "category": "dozing",
+      "durationSeconds": 1.5,
+      "tags": [
+        "effect",
+        "dozing"
+      ]
+    },
+    {
+      "id": "se_adv_eff_exclamation-000_01",
+      "file": "./SfxExt/se_adv_eff_exclamation-000_01.wav",
+      "category": "exclamation",
+      "durationSeconds": 0.375,
+      "tags": [
+        "effect",
+        "exclamation"
+      ]
+    },
+    {
+      "id": "se_adv_eff_exclamation-question-000_01",
+      "file": "./SfxExt/se_adv_eff_exclamation-question-000_01.wav",
+      "category": "exclamation-question",
+      "durationSeconds": 0.669,
+      "tags": [
+        "effect",
+        "exclamation-question"
+      ]
+    },
+    {
+      "id": "se_adv_eff_fun-000_01",
+      "file": "./SfxExt/se_adv_eff_fun-000_01.wav",
+      "category": "fun",
+      "durationSeconds": 0.37,
+      "tags": [
+        "effect",
+        "fun"
+      ]
+    },
+    {
+      "id": "se_adv_eff_fun-000_02",
+      "file": "./SfxExt/se_adv_eff_fun-000_02.wav",
+      "category": "fun",
+      "durationSeconds": 0.366,
+      "tags": [
+        "effect",
+        "fun"
+      ]
+    },
+    {
+      "id": "se_adv_eff_fun-000_03",
+      "file": "./SfxExt/se_adv_eff_fun-000_03.wav",
+      "category": "fun",
+      "durationSeconds": 0.5,
+      "tags": [
+        "effect",
+        "fun"
+      ]
+    },
+    {
+      "id": "se_adv_eff_fun-002_01",
+      "file": "./SfxExt/se_adv_eff_fun-002_01.wav",
+      "category": "fun",
+      "durationSeconds": 0.588,
+      "tags": [
+        "effect",
+        "fun"
+      ]
+    },
+    {
+      "id": "se_adv_eff_guruguru-000_01",
+      "file": "./SfxExt/se_adv_eff_guruguru-000_01.wav",
+      "category": "guruguru",
+      "durationSeconds": 0.781,
+      "tags": [
+        "effect",
+        "guruguru"
+      ]
+    },
+    {
+      "id": "se_adv_eff_happy-000_01",
+      "file": "./SfxExt/se_adv_eff_happy-000_01.wav",
+      "category": "happy",
+      "durationSeconds": 2.32,
+      "tags": [
+        "effect",
+        "happy"
+      ]
+    },
+    {
+      "id": "se_adv_eff_inspiration-000_01",
+      "file": "./SfxExt/se_adv_eff_inspiration-000_01.wav",
+      "category": "inspiration",
+      "durationSeconds": 0.813,
+      "tags": [
+        "effect",
+        "inspiration"
+      ]
+    },
+    {
+      "id": "se_adv_eff_kira-000_01",
+      "file": "./SfxExt/se_adv_eff_kira-000_01.wav",
+      "category": "kira",
+      "durationSeconds": 1.126,
+      "tags": [
+        "effect",
+        "kira"
+      ]
+    },
+    {
+      "id": "se_adv_eff_kira-001_01",
+      "file": "./SfxExt/se_adv_eff_kira-001_01.wav",
+      "category": "kira",
+      "durationSeconds": 1.377,
+      "tags": [
+        "effect",
+        "kira"
+      ]
+    },
+    {
+      "id": "se_adv_eff_kira-002_01",
+      "file": "./SfxExt/se_adv_eff_kira-002_01.wav",
+      "category": "kira",
+      "durationSeconds": 1.324,
+      "tags": [
+        "effect",
+        "kira"
+      ]
+    },
+    {
+      "id": "se_adv_eff_kira-003_01",
+      "file": "./SfxExt/se_adv_eff_kira-003_01.wav",
+      "category": "kira",
+      "durationSeconds": 1.5,
+      "tags": [
+        "effect",
+        "kira"
+      ]
+    },
+    {
+      "id": "se_adv_eff_love-000_01",
+      "file": "./SfxExt/se_adv_eff_love-000_01.wav",
+      "category": "love",
+      "durationSeconds": 1.78,
+      "tags": [
+        "effect",
+        "love"
+      ]
+    },
+    {
+      "id": "se_adv_eff_nervous-000_01",
+      "file": "./SfxExt/se_adv_eff_nervous-000_01.wav",
+      "category": "nervous",
+      "durationSeconds": 1.316,
+      "tags": [
+        "effect",
+        "nervous"
+      ]
+    },
+    {
+      "id": "se_adv_eff_nervous-001_01",
+      "file": "./SfxExt/se_adv_eff_nervous-001_01.wav",
+      "category": "nervous",
+      "durationSeconds": 0.76,
+      "tags": [
+        "effect",
+        "nervous"
+      ]
+    },
+    {
+      "id": "se_adv_eff_note-000_01",
+      "file": "./SfxExt/se_adv_eff_note-000_01.wav",
+      "category": "note",
+      "durationSeconds": 0.669,
+      "tags": [
+        "effect",
+        "note"
+      ]
+    },
+    {
+      "id": "se_adv_eff_notice-000_01",
+      "file": "./SfxExt/se_adv_eff_notice-000_01.wav",
+      "category": "notice",
+      "durationSeconds": 0.76,
+      "tags": [
+        "effect",
+        "notice"
+      ]
+    },
+    {
+      "id": "se_adv_eff_notice-001_01",
+      "file": "./SfxExt/se_adv_eff_notice-001_01.wav",
+      "category": "notice",
+      "durationSeconds": 0.588,
+      "tags": [
+        "effect",
+        "notice"
+      ]
+    },
+    {
+      "id": "se_adv_eff_notice-002_01",
+      "file": "./SfxExt/se_adv_eff_notice-002_01.wav",
+      "category": "notice",
+      "durationSeconds": 0.751,
+      "tags": [
+        "effect",
+        "notice"
+      ]
+    },
+    {
+      "id": "se_adv_eff_panic-000_01",
+      "file": "./SfxExt/se_adv_eff_panic-000_01.wav",
+      "category": "panic",
+      "durationSeconds": 1.199,
+      "tags": [
+        "effect",
+        "panic"
+      ]
+    },
+    {
+      "id": "se_adv_eff_panic-000_02",
+      "file": "./SfxExt/se_adv_eff_panic-000_02.wav",
+      "category": "panic",
+      "durationSeconds": 0.565,
+      "tags": [
+        "effect",
+        "panic"
+      ]
+    },
+    {
+      "id": "se_adv_eff_question-000_01",
+      "file": "./SfxExt/se_adv_eff_question-000_01.wav",
+      "category": "question",
+      "durationSeconds": 0.5,
+      "tags": [
+        "effect",
+        "question"
+      ]
+    },
+    {
+      "id": "se_adv_eff_shock-000_01",
+      "file": "./SfxExt/se_adv_eff_shock-000_01.wav",
+      "category": "shock",
+      "durationSeconds": 0.375,
+      "tags": [
+        "effect",
+        "shock"
+      ]
+    },
+    {
+      "id": "se_adv_eff_shock-001_01",
+      "file": "./SfxExt/se_adv_eff_shock-001_01.wav",
+      "category": "shock",
+      "durationSeconds": 1.75,
+      "tags": [
+        "effect",
+        "shock"
+      ]
+    },
+    {
+      "id": "se_adv_eff_shy-000_01",
+      "file": "./SfxExt/se_adv_eff_shy-000_01.wav",
+      "category": "shy",
+      "durationSeconds": 1.269,
+      "tags": [
+        "effect",
+        "shy"
+      ]
+    },
+    {
+      "id": "se_adv_eff_sigh-000_01",
+      "file": "./SfxExt/se_adv_eff_sigh-000_01.wav",
+      "category": "sigh",
+      "durationSeconds": 0.535,
+      "tags": [
+        "effect",
+        "sigh"
+      ]
+    },
+    {
+      "id": "se_adv_eff_sneeze-000_01",
+      "file": "./SfxExt/se_adv_eff_sneeze-000_01.wav",
+      "category": "sneeze",
+      "durationSeconds": 0.517,
+      "tags": [
+        "effect",
+        "sneeze"
+      ]
+    },
+    {
+      "id": "se_adv_eff_think-000_01",
+      "file": "./SfxExt/se_adv_eff_think-000_01.wav",
+      "category": "think",
+      "durationSeconds": 1.625,
+      "tags": [
+        "effect",
+        "think"
+      ]
+    },
+    {
+      "id": "se_adv_eff_think-001_01",
+      "file": "./SfxExt/se_adv_eff_think-001_01.wav",
+      "category": "think",
+      "durationSeconds": 2.283,
+      "tags": [
+        "effect",
+        "think"
+      ]
+    },
+    {
+      "id": "se_adv_eff_trembling-000_01",
+      "file": "./SfxExt/se_adv_eff_trembling-000_01.wav",
+      "category": "trembling",
+      "durationSeconds": 1.75,
+      "tags": [
+        "effect",
+        "trembling"
+      ]
+    }
+  ],
+  "categories": {
+    "angry": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_angry-000_01",
+        "se_adv_eff_angry-000_02",
+        "se_adv_eff_angry-001-02",
+        "se_adv_eff_angry-001_01"
+      ]
+    },
+    "cry": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_cry-000_01"
+      ]
+    },
+    "doya": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_doya-000_01"
+      ]
+    },
+    "dozing": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_dozing-000_01"
+      ]
+    },
+    "exclamation": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_exclamation-000_01"
+      ]
+    },
+    "exclamation-question": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_exclamation-question-000_01"
+      ]
+    },
+    "fun": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_fun-000_01",
+        "se_adv_eff_fun-000_02",
+        "se_adv_eff_fun-000_03",
+        "se_adv_eff_fun-002_01"
+      ]
+    },
+    "guruguru": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_guruguru-000_01"
+      ]
+    },
+    "happy": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_happy-000_01"
+      ]
+    },
+    "inspiration": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_inspiration-000_01"
+      ]
+    },
+    "kira": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_kira-000_01",
+        "se_adv_eff_kira-001_01",
+        "se_adv_eff_kira-002_01",
+        "se_adv_eff_kira-003_01"
+      ]
+    },
+    "love": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_love-000_01"
+      ]
+    },
+    "nervous": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_nervous-000_01",
+        "se_adv_eff_nervous-001_01"
+      ]
+    },
+    "note": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_note-000_01"
+      ]
+    },
+    "notice": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_notice-000_01",
+        "se_adv_eff_notice-001_01",
+        "se_adv_eff_notice-002_01"
+      ]
+    },
+    "panic": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_panic-000_01",
+        "se_adv_eff_panic-000_02"
+      ]
+    },
+    "question": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_question-000_01"
+      ]
+    },
+    "shock": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_shock-000_01",
+        "se_adv_eff_shock-001_01"
+      ]
+    },
+    "shy": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_shy-000_01"
+      ]
+    },
+    "sigh": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_sigh-000_01"
+      ]
+    },
+    "sneeze": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_sneeze-000_01"
+      ]
+    },
+    "think": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_think-000_01",
+        "se_adv_eff_think-001_01"
+      ]
+    },
+    "trembling": {
+      "expressions": [],
+      "motions": [],
+      "sounds": [],
+      "effects": [
+        "se_adv_eff_trembling-000_01"
+      ]
+    }
+  },
+  "intentMap": {
+    "neutral": {
+      "motionCategories": [
+        "idle",
+        "default",
+        "blink",
+        "deep-breath",
+        "look-around"
+      ],
+      "expressionCategories": [
+        "idle",
+        "face"
+      ],
+      "soundCategories": [
+        "address",
+        "adverb",
+        "conjunction",
+        "symbol"
+      ]
+    },
+    "happy": {
+      "motionCategories": [
+        "happy",
+        "joy",
+        "smile",
+        "dance",
+        "wink"
+      ],
+      "expressionCategories": [
+        "joy",
+        "smile"
+      ],
+      "soundCategories": [
+        "glad",
+        "enjoy",
+        "laugh",
+        "positive"
+      ]
+    },
+    "angry": {
+      "motionCategories": [
+        "anger",
+        "provoke",
+        "shout"
+      ],
+      "expressionCategories": [
+        "anger",
+        "serious"
+      ],
+      "soundCategories": [
+        "angry",
+        "caution",
+        "scream"
+      ]
+    },
+    "sad": {
+      "motionCategories": [
+        "sad",
+        "cry",
+        "tear",
+        "disappoint"
+      ],
+      "expressionCategories": [
+        "sad"
+      ],
+      "soundCategories": [
+        "sad",
+        "cry",
+        "sorry"
+      ]
+    },
+    "shy": {
+      "motionCategories": [
+        "shy"
+      ],
+      "expressionCategories": [
+        "shy"
+      ],
+      "soundCategories": [
+        "embarrassed"
+      ]
+    },
+    "surprised": {
+      "motionCategories": [
+        "surprise",
+        "notice"
+      ],
+      "expressionCategories": [
+        "surprise"
+      ],
+      "soundCategories": [
+        "surprised",
+        "shock",
+        "notice"
+      ]
+    },
+    "thinking": {
+      "motionCategories": [
+        "think",
+        "question",
+        "listen"
+      ],
+      "expressionCategories": [
+        "serious"
+      ],
+      "soundCategories": [
+        "think",
+        "question"
+      ]
+    },
+    "encouraging": {
+      "motionCategories": [
+        "motivate",
+        "yes",
+        "appeal"
+      ],
+      "expressionCategories": [
+        "smile",
+        "joy"
+      ],
+      "soundCategories": [
+        "motivate",
+        "support",
+        "advice",
+        "empathy"
+      ]
+    },
+    "refusing": {
+      "motionCategories": [
+        "no"
+      ],
+      "expressionCategories": [
+        "serious",
+        "anger"
+      ],
+      "soundCategories": [
+        "denial",
+        "reject"
+      ]
+    },
+    "greeting": {
+      "motionCategories": [
+        "bow",
+        "yes"
+      ],
+      "expressionCategories": [
+        "smile"
+      ],
+      "soundCategories": [
+        "greet",
+        "thanks"
+      ]
+    }
+  },
+  "effectMap": {
+    "neutral": [
+      "note",
+      "dozing",
+      "sneeze"
+    ],
+    "happy": [
+      "fun",
+      "happy",
+      "kira",
+      "love",
+      "doya",
+      "note"
+    ],
+    "angry": [
+      "angry",
+      "trembling",
+      "panic"
+    ],
+    "sad": [
+      "cry",
+      "sigh",
+      "trembling"
+    ],
+    "shy": [
+      "shy",
+      "nervous",
+      "love",
+      "trembling"
+    ],
+    "surprised": [
+      "shock",
+      "notice",
+      "exclamation",
+      "exclamation-question",
+      "panic"
+    ],
+    "thinking": [
+      "think",
+      "question",
+      "guruguru",
+      "inspiration"
+    ],
+    "encouraging": [
+      "kira",
+      "happy",
+      "inspiration",
+      "note"
+    ],
+    "refusing": [
+      "sigh",
+      "angry",
+      "exclamation"
+    ],
+    "greeting": [
+      "note",
+      "kira",
+      "happy"
+    ]
+  }
+}

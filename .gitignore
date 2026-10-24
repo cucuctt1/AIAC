@@ -1,0 +1,7 @@
+node_modules/
+web_renderer/node_modules/
+web_renderer/dist/
+web_renderer/public/Core/
+web_renderer/public/Framework/
+web_renderer/public/SfxExt/
+*.log

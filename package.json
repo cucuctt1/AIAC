@@ -1,0 +1,17 @@
+{
+  "name": "suisei-live2d-app",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "build:web": "npm --prefix web_renderer run build:prod",
+    "build:web:dev": "npm --prefix web_renderer run build",
+    "start": "node launch.js"
+  },
+  "devDependencies": {
+    "electron": "^36.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1"
+  }
+}
