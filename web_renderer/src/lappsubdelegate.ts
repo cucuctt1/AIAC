@@ -244,8 +244,8 @@ export class LAppSubdelegate {
     return this._live2dManager;
   }
 
-  public playAssistantMotion(group: string, priority: 'normal' | 'force' = 'normal', index = 0): void {
-    this._live2dManager.playMotion(group, priority, index);
+  public playAssistantMotion(group: string, priority: 'normal' | 'force' = 'normal', index = 0, blendSeconds?: number): void {
+    this._live2dManager.playMotion(group, priority, index, blendSeconds);
   }
 
   public setAssistantExpression(expressionId: string): void {

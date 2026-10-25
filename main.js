@@ -1,4 +1,4 @@
-const { app, BrowserWindow, desktopCapturer, dialog, ipcMain, Menu, nativeImage, net, powerMonitor, safeStorage, screen, shell, Tray } = require('electron');
+const { app, BrowserWindow, clipboard, desktopCapturer, dialog, ipcMain, Menu, nativeImage, net, powerMonitor, safeStorage, screen, shell, Tray } = require('electron');
 const { execFile, spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -7,6 +7,7 @@ const { retrieve, formatContext } = require('./rag');
 const { searchWeb, formatWebContext } = require('./websearch');
 const { BehaviorSystem } = require('./behavior-system');
 const { McpManager, formatMcpResult } = require('./mcp-client');
+const { BrowserBridge } = require('./browser-bridge');
 
 let window;
 let dragOffset = null;
@@ -25,6 +26,9 @@ let activityProbeRunning = false;
 let behaviorDirectorTimer;
 let behaviorSystem;
 let mcpManager;
+let browserBridge;
+const browserSessions = new Map();
+const browserReactionAt = new Map();
 let lastActivityKind = '';
 let lastActivityReactionAt = 0;
 let currentActivityState = { kind: 'unknown', label: '', process: '', updatedAt: null };
@@ -33,6 +37,7 @@ let emotionState = { intent: 'neutral', intensity: 0.3, updatedAt: 0 };
 let recentWindowDrags = [];
 let lastMediaSignature = '';
 let currentMediaState = { available: false, playing: false, isSong: false, status: '', type: '', title: '', artist: '', source: '' };
+let suppressMediaReactionsUntil = 0;
 const conversation = [];
 const sessionStartedAt = new Date().toISOString();
 let previousSessionMemo = null;
@@ -188,9 +193,18 @@ function buildCustomCatalog(modelJsonPath, soundDirectory, effectDirectory, acti
   if (modelJsonPath && fs.existsSync(modelJsonPath)) {
     const model = JSON.parse(fs.readFileSync(modelJsonPath, 'utf8'));
     const refs = model.FileReferences || {};
+    const modelRoot = path.dirname(modelJsonPath);
+    const motionDuration = file => {
+      try {
+        const motion = JSON.parse(fs.readFileSync(path.resolve(modelRoot, file), 'utf8'));
+        const duration = Number(motion?.Meta?.Duration);
+        return Number.isFinite(duration) && duration > 0 ? duration : null;
+      } catch { return null; }
+    };
     catalog.expressions = (refs.Expressions || []).map(item => ({ id: item.Name, file: item.File, category: assetCategory(`${item.Name} ${item.File}`) }));
     catalog.motions = Object.entries(refs.Motions || {}).flatMap(([group, entries]) => entries.map((item, index) => ({
-      id: `${group}_${index}`, group, file: item.File, category: assetCategory(`${group} ${item.File}`), level: null
+      id: `${group}_${index}`, group, index, file: item.File, category: assetCategory(`${group} ${item.File}`), level: null,
+      durationSeconds: motionDuration(item.File)
     })));
     catalog.model = path.basename(modelJsonPath, '.model3.json');
   }
@@ -752,7 +766,7 @@ function actionInterfacePrompt(mcpTools = []) {
 
 ACTION INTERFACE
 Return one JSON object with these fields only:
-{"intent":"<intent>","intensity":<0.0-1.0>,"playSound":<boolean>,"webSearchQuery":"<query or null>","ragQuery":"<query or null>","visionTool":"none|screenshot","runningJoke":{"mode":"none|create|reuse","key":"<short joke key>"},"windowAction":"none|hide|exit","codeTool":{"name":"none|inspect_code|read_file|list_files|terminal","path":"<relative path or empty>","query":"<query or empty>","command":"<command or empty>"},"mcpTool":{"server":"<server or empty>","name":"<tool or none>","arguments":{}}}
+{"intent":"<intent>","intensity":<0.0-1.0>,"playSound":<boolean>,"webSearchQuery":"<query or null>","ragQuery":"<query or null>","visionTool":"none|screenshot","runningJoke":{"mode":"none|create|reuse","key":"<short joke key>"},"windowAction":"none|hide|exit","browserAction":{"name":"none|play_youtube","tabSessionId":"<exact session or empty>","videoId":"<exact observed ID or empty>","title":"<exact observed title or empty>"},"codeTool":{"name":"none|inspect_code|read_file|list_files|terminal","path":"<relative path or empty>","query":"<query or empty>","command":"<command or empty>"},"mcpTool":{"server":"<server or empty>","name":"<tool or none>","arguments":{}}}
 
 Allowed intents: ${allowedIntents.join(', ')}.
 - greeting: greetings, welcomes, introductions, and goodbyes
@@ -789,6 +803,8 @@ Never invent file contents or terminal results. Prefer inspect_code before read_
 
 Choose windowAction only from none, hide, or exit. Use exit when the user clearly says goodbye or asks the assistant/app to close, quit, or exit. Use hide only when the user asks the assistant/window to hide or go to the tray. Otherwise use none. Never hide or exit for hypothetical discussion, quoted text, code, or questions about those actions.
 
+Choose browserAction=play_youtube only when the user explicitly asks to play, open, or switch to a YouTube video. Select an exact tabSessionId, videoId, and bound title from CURRENT YOUTUBE CATALOG supplied in the user message. Never invent an ID, use web-search results for playback, or control YouTube for a mere recommendation request such as "pick one" unless the user also asks to play it. Otherwise use none.
+
 This action drives retrieval, web search, MCP, window control, face expression, body motion, lip-sync, gaze, and optional character voice sound. Output valid JSON only, with no Markdown or explanation.${mcpSection}`;
 }
 
@@ -822,6 +838,12 @@ function normalizeAction(value, config) {
     name: String(value?.mcpTool?.name || 'none').trim().slice(0, 120),
     arguments: value?.mcpTool?.arguments && typeof value.mcpTool.arguments === 'object' && !Array.isArray(value.mcpTool.arguments) ? value.mcpTool.arguments : {}
   };
+  const browserAction = value?.browserAction?.name === 'play_youtube' ? {
+    name: 'play_youtube',
+    tabSessionId: String(value.browserAction.tabSessionId || '').trim().slice(0, 80),
+    videoId: String(value.browserAction.videoId || '').trim().slice(0, 100),
+    title: String(value.browserAction.title || '').replace(/\s+/g, ' ').trim().slice(0, 300)
+  } : { name: 'none', tabSessionId: '', videoId: '', title: '' };
   return {
     intent,
     intensity,
@@ -832,6 +854,7 @@ function normalizeAction(value, config) {
     visionTool,
     runningJoke,
     mcpTool,
+    browserAction,
     playSound: defaults.playSounds !== false
       && (defaults.alwaysPlaySound === true || emotionalSound || value?.playSound === true)
   };
@@ -921,7 +944,7 @@ async function planAction(config, prompt, signal) {
         response_format: { type: 'json_object' },
         stream: false,
         ...(config.baseUrl.includes('deepseek.com') ? { thinking: { type: 'disabled' } } : {}),
-        max_tokens: 360,
+        max_tokens: 440,
         temperature: 0.2
       })
     });
@@ -1166,9 +1189,10 @@ async function streamAssistant(prompt, options = {}) {
       });
     }
   }, thinkingDelay);
+  const browserContext = formatYouTubeCatalogContext();
   let action;
   try {
-    action = await planAction(config, prompt, signal);
+    action = await planAction(config, browserContext ? `${prompt}\n\n${browserContext}` : prompt, signal);
   } catch (error) {
     clearTimeout(thinkingTimer);
     throw error;
@@ -1180,11 +1204,13 @@ async function streamAssistant(prompt, options = {}) {
     action.visionTool = 'none';
     action.codeTool = { name: 'none', path: '', query: '', command: '' };
     action.mcpTool = { server: '', name: 'none', arguments: {} };
+    action.browserAction = { name: 'none', tabSessionId: '', videoId: '', title: '' };
   }
   if (options.webSearchQuery && config.webSearch?.enabled) action.webSearchQuery = String(options.webSearchQuery).slice(0, 600);
   const explicitVisionRequest = /\b(?:take (?:a )?look|look at this|look at (?:my|the) screen|what(?:'s| is) (?:this|on my screen)|check (?:my|the) screen|read (?:this|my screen))\b/i.test(prompt);
   if (options.allowVision === false) action.visionTool = 'none';
   else if (explicitVisionRequest) action.visionTool = 'screenshot';
+  else action.visionTool = 'none';
   if (options.internal) action.windowAction = 'none';
   const requestedTool = inferToolRequest(prompt);
   if (!options.suppressTools && !requestedTool && !action.webSearchQuery) action.webSearchQuery = proactiveWebSearchQuery(prompt, config.webSearch);
@@ -1193,6 +1219,7 @@ async function streamAssistant(prompt, options = {}) {
   const toolContext = await runRequestedTool(requestedTool, config, signal);
   const codeContext = await runCodeTool(action.codeTool, config);
   const mcpContext = await runMcpTool(action.mcpTool, config);
+  const browserActionContext = options.internal ? '' : executeBrowserAction(action.browserAction);
   let screenshotDataUrl = '';
   if (action.visionTool === 'screenshot') {
     try { screenshotDataUrl = await captureCompressedScreenshot(); }
@@ -1220,7 +1247,7 @@ async function streamAssistant(prompt, options = {}) {
   const mediaContext = currentMediaState.playing && currentMediaState.isSong
     ? `CURRENT MEDIA\nA song is currently playing. Title: ${currentMediaState.title || 'unknown'}. Artist: ${currentMediaState.artist || 'unknown'}. Source: ${currentMediaState.source || 'unknown'}. If the user asks about the current song, identify it from this metadata. Give a subjective character reaction, but do not claim you listened to audio or know details not present here.`
     : 'CURRENT MEDIA\nNo song is currently confirmed as playing.';
-  const knowledgeContext = [formatMemoryLayers(), formatMemory(), formatCompanionState(), formatPreviousSession(), behaviorSystem?.format(), formatRoutineContext(), formatRuntimeStatus(options), formatBanterGuidance(options.languagePrompt || prompt), jokeContext, mediaContext, profilePrompt ? `ACTIVE CHARACTER PROFILE\nThis profile extends or overrides the base persona where they differ:\n${profilePrompt}` : '', toolContext, codeContext, mcpContext, ragContext, webContext].filter(Boolean).join('\n\n');
+  const knowledgeContext = [formatMemoryLayers(), formatMemory(), formatCompanionState(), formatPreviousSession(), behaviorSystem?.format(), formatRoutineContext(), formatRuntimeStatus(options), formatBanterGuidance(options.languagePrompt || prompt), jokeContext, mediaContext, browserContext, browserActionContext, profilePrompt ? `ACTIVE CHARACTER PROFILE\nThis profile extends or overrides the base persona where they differ:\n${profilePrompt}` : '', toolContext, codeContext, mcpContext, ragContext, webContext].filter(Boolean).join('\n\n');
 
   let response;
   try {
@@ -1305,6 +1332,102 @@ async function streamAssistant(prompt, options = {}) {
   emit('assistant-end');
 }
 
+function browserSession(event) {
+  const key = event.tabSessionId || event.page.url || 'unknown';
+  const previous = browserSessions.get(key) || { previousSelection: '', page: {}, video: {}, videos: [] };
+  const next = {
+    previousSelection: previous.previousSelection,
+    page: event.page.url ? event.page : previous.page,
+    video: event.video.id ? event.video : previous.video,
+    videos: event.videos?.length ? event.videos : previous.videos,
+    updatedAt: Date.now()
+  };
+  browserSessions.set(key, next);
+  if (browserSessions.size > 40) {
+    const oldest = [...browserSessions.entries()].sort((a, b) => a[1].updatedAt - b[1].updatedAt)[0];
+    if (oldest) browserSessions.delete(oldest[0]);
+  }
+  return next;
+}
+
+function formatYouTubeCatalogContext() {
+  const candidates = [...browserSessions.entries()].filter(([, session]) => session.videos?.length);
+  if (!candidates.length) return '';
+  const [tabSessionId, session] = candidates.sort((a, b) => {
+    const activeDifference = Number(b[1].video?.active === true) - Number(a[1].video?.active === true);
+    if (activeDifference) return activeDifference;
+    const audibleDifference = Number(b[1].video?.audible === true) - Number(a[1].video?.audible === true);
+    return audibleDifference || b[1].updatedAt - a[1].updatedAt;
+  })[0];
+  const lines = session.videos.map((video, index) => `${index + 1}. [${video.source}] ${video.title} — ${video.author || 'unknown author'} (id: ${video.id})`);
+  return `CURRENT YOUTUBE CATALOG\nTab session: ${tabSessionId}\nCurrent video: ${session.video?.title || 'unknown'} (${session.video?.id || 'unknown'})\nObserved choices, ordered with playlist entries first:\n${lines.join('\n')}\nUse this bounded catalog for recommendations. Playback is allowed only with an exact observed ID and bound title.`;
+}
+
+function executeBrowserAction(action) {
+  if (!action || action.name !== 'play_youtube') return '';
+  const session = browserSessions.get(action.tabSessionId);
+  const match = session?.videos?.find(video => video.id === action.videoId && video.title === action.title);
+  if (!match) return 'BROWSER ACTION RESULT\nYouTube playback was refused because the requested ID/title pair was not in the observed catalog.';
+  const queued = browserBridge?.enqueueCommand(action.tabSessionId, { name: 'play_youtube', videoId: match.id, title: match.title });
+  if (queued) suppressMediaReactionsUntil = Date.now() + 20000;
+  return queued
+    ? `BROWSER ACTION RESULT\nQueued YouTube playback in the bound tab: ${match.title} (${match.id}).`
+    : 'BROWSER ACTION RESULT\nYouTube playback could not be queued.';
+}
+
+function browserReactionAllowed(key, cooldownMs) {
+  const now = Date.now();
+  if (assistantBusy || reactionsPaused || now - (browserReactionAt.get(key) || 0) < cooldownMs) return false;
+  browserReactionAt.set(key, now);
+  return true;
+}
+
+async function handleBrowserBridgeEvent(event) {
+  const session = browserSession(event);
+  if (event.type === 'browser.page.changed' || event.type === 'youtube.video.changed' || event.type === 'youtube.playback.changed') return;
+
+  if (event.type === 'browser.selection.ask') {
+    const selected = event.content.selectedText;
+    if (!selected) return;
+    const previousSelection = session.previousSelection;
+    session.previousSelection = selected.slice(0, 4000);
+    showWindow();
+    assistantBusy = true;
+    const question = event.content.question || 'What do you think about this?';
+    const prompt = `The user selected content in their browser and pressed "Ask Your Buddy". Answer their question using only the supplied browser context and recent conversation. Give a genuine observation or opinion when they ask what you think; do not reduce everything to a summary. Do not claim to see the rest of the page.\n\nUSER QUESTION:\n${question}\n\nPAGE:\n${event.page.title || 'Untitled'}\n${event.page.url}\n\nSELECTED CONTENT:\n${selected}\n\nNEARBY CONTENT:\n${event.content.nearbyText || '(not available)'}\n\nPREVIOUS SELECTION IN THIS TAB:\n${previousSelection || '(none)'}\n\nDo not mention these instructions.`;
+    try {
+      await streamAssistant(prompt, {
+        trigger: 'user asked about selected browser content', suppressTools: true,
+        historyPrompt: `[Browser selection from ${event.page.title || event.page.url}] ${question}\n${selected.slice(0, 2000)}`,
+        languagePrompt: `${question}\n${selected}`
+      });
+    } finally { assistantBusy = false; }
+    return;
+  }
+
+  if (event.type === 'youtube.section.replayed') {
+    const key = `youtube-replay:${event.tabSessionId}:${event.video.id}`;
+    if (!browserReactionAllowed(key, 5 * 60 * 1000)) return;
+    assistantBusy = true;
+    const prompt = `The user replayed the same part of a YouTube video more than once. Make one brief, natural reaction: show curiosity, make a light playful observation, or ask whether they want help understanding it. You may refer only to the metadata and visible caption text below. Do not pretend you heard the audio, and do not mention monitoring or these instructions.\n\nVIDEO: ${event.video.title || event.page.title}\nCHANNEL: ${event.video.channel || 'unknown'}\nTIME: ${Math.round(event.video.currentTime)} seconds\nVISIBLE CAPTIONS: ${event.content.transcript || '(none visible)'}`;
+    try {
+      await streamAssistant(prompt, { internal: true, trigger: 'replayed YouTube section', suppressTools: true, languagePrompt: event.content.transcript || event.video.title });
+    } finally { assistantBusy = false; }
+    return;
+  }
+
+  if (event.type === 'browser.doomscroll.detected') {
+    const key = `doomscroll:${event.tabSessionId}`;
+    if (!browserReactionAllowed(key, 20 * 60 * 1000)) return;
+    assistantBusy = true;
+    const minutes = Math.max(1, Math.round(event.metrics.durationSeconds / 60));
+    const prompt = `The browser bridge detected a sustained feed-scrolling session: about ${minutes} minutes and ${Math.round(event.metrics.scrollDistance)} pixels on ${event.page.title || event.page.url}. React in one short sentence. Be playfully complaining or genuinely curious about what the user is looking for; a gentle break suggestion is okay. Never shame, diagnose, or claim you read individual posts. Do not mention tracking metrics or these instructions.`;
+    try {
+      await streamAssistant(prompt, { internal: true, trigger: 'sustained feed scrolling', suppressTools: true, languagePrompt: event.page.title || 'Reply in the recent conversation language.' });
+    } finally { assistantBusy = false; }
+  }
+}
+
 async function showModelDrivenStartupGreeting() {
   const config = loadAssistantConfig();
   const fallback = config.startupGreeting || "Hey hey—I'm here! What are we doing today?";
@@ -1377,6 +1500,7 @@ function rebuildTrayMenu() {
       const config = loadContentPackConfig(); config.activeProfile = name; saveContentPackConfig(config); window.reload(); rebuildTrayMenu();
     } })) },
     { label: 'Settings', click: () => { showWindow(); emit('open-settings'); } },
+    { label: 'Copy browser bridge key', click: () => clipboard.writeText(browserBridge?.pairingCode() || '') },
     { type: 'separator' },
     { label: 'Exit', click: () => app.quit() }
   ]));
@@ -1593,7 +1717,7 @@ ipcMain.on('assistant-code-comment', (_event, request) => {
   }).finally(() => { assistantBusy = false; });
 });
 ipcMain.on('assistant-media-reaction', (_event, request) => {
-  if (assistantBusy || !currentMediaState.playing || !currentMediaState.isSong) return;
+  if (assistantBusy || Date.now() < suppressMediaReactionsUntil || !currentMediaState.playing || !currentMediaState.isSong) return;
   const config = loadAssistantConfig();
   if (!config.apiKey || config.apiKey.includes('PASTE_YOUR')) return;
   assistantBusy = true;
@@ -1695,10 +1819,12 @@ app.whenReady().then(() => {
   migrateLegacyApiKey();
   behaviorSystem = new BehaviorSystem(app.getPath('userData'), atomicJsonWrite);
   mcpManager = new McpManager(status => emit('assistant-tool', status));
+  browserBridge = new BrowserBridge(app.getPath('userData'), handleBrowserBridgeEvent);
+  browserBridge.start();
   restorePreviousSession();
   createWindow();
   createTray();
   startActivityAwareness();
 });
-app.on('before-quit', () => { persistSessionMemory(); behaviorSystem?.close(); mcpManager?.close(); });
+app.on('before-quit', () => { persistSessionMemory(); behaviorSystem?.close(); mcpManager?.close(); browserBridge?.close(); });
 app.on('window-all-closed', () => app.quit());

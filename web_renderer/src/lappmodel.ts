@@ -694,7 +694,8 @@ export class LAppModel extends CubismUserModel {
     no: number,
     priority: number,
     onFinishedMotionHandler?: FinishedMotionCallback,
-    onBeganMotionHandler?: BeganMotionCallback
+    onBeganMotionHandler?: BeganMotionCallback,
+    blendSeconds?: number
   ): CubismMotionQueueEntryHandle {
     if (priority == LAppDefine.PriorityForce) {
       this._motionManager.setReservePriority(priority);
@@ -750,6 +751,12 @@ export class LAppModel extends CubismUserModel {
     } else {
       motion.setBeganMotionHandler(onBeganMotionHandler);
       motion.setFinishedMotionHandler(onFinishedMotionHandler);
+    }
+
+    if (Number.isFinite(blendSeconds) && blendSeconds > 0) {
+      const safeBlendSeconds = Math.max(0.05, Math.min(2, blendSeconds));
+      motion.setFadeInTime(safeBlendSeconds);
+      motion.setFadeOutTime(safeBlendSeconds);
     }
 
     //voice

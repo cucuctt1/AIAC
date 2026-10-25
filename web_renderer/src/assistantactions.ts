@@ -14,6 +14,7 @@ type CatalogAsset = {
   category: string;
   level?: number | null;
   file: string;
+  durationSeconds?: number | null;
 };
 
 type ActionCatalog = {
@@ -68,6 +69,9 @@ let currentExpressionId = '';
 let danceTimer = 0;
 let danceUntil = 0;
 let danceStep = 0;
+let danceMixPoint = 0.9;
+let danceBlendSeconds = 0.45;
+let danceSequenceMode: 'repeat' | 'alternate' | 'random' = 'repeat';
 
 type ReactionJob = { owner: string; priority: number; holdMs: number; run: () => void };
 let activeReaction: ReactionJob = null;
@@ -353,6 +357,8 @@ function stopDanceLoop(notify = true): void {
 function startDanceLoop(motion: CatalogAsset, expression: string, intent: string, intensity: number): void {
   stopDanceLoop(false);
   danceUntil = performance.now() + 30000;
+  let started = false;
+  let repeatedMotion: CatalogAsset = null;
   const replay = (): void => {
     if (performance.now() >= danceUntil || activeReaction?.owner !== 'music' || speaking || thinking || reactionsPaused || !idleAnimationsEnabled) {
       stopDanceLoop();
@@ -362,9 +368,23 @@ function startDanceLoop(motion: CatalogAsset, expression: string, intent: string
     if (expression) LAppDelegate.getInstance().setAssistantExpression(expression);
     LAppDelegate.getInstance().setAssistantPose(intent, intensity);
     const danceChoices = ['dance-02_lv03', 'dance-01_lv03'].map(id => catalog.motions.find(asset => asset.group === id)).filter(Boolean);
-    const nextMotion = danceChoices.length ? danceChoices[danceStep++ % danceChoices.length] : motion;
-    LAppDelegate.getInstance().playAssistantMotion(nextMotion.group, 'normal', nextMotion.index || 0);
-    danceTimer = window.setTimeout(replay, 3400);
+    let nextMotion = motion;
+    if (danceChoices.length && danceSequenceMode === 'repeat') {
+      if (!repeatedMotion) repeatedMotion = danceChoices[danceStep++ % danceChoices.length];
+      nextMotion = repeatedMotion;
+    } else if (danceChoices.length && danceSequenceMode === 'random') {
+      nextMotion = danceChoices[Math.floor(Math.random() * danceChoices.length)];
+    } else if (danceChoices.length) {
+      nextMotion = danceChoices[danceStep++ % danceChoices.length];
+    }
+    // A scheduled handoff intentionally interrupts at 90%. Cubism fades the
+    // outgoing motion while fading this one in, avoiding the idle-frame gap.
+    const durationSeconds = Number(nextMotion.durationSeconds) > 0 ? Number(nextMotion.durationSeconds) : 3.8;
+    const effectiveBlendSeconds = Math.min(danceBlendSeconds, durationSeconds * 0.45);
+    LAppDelegate.getInstance().playAssistantMotion(nextMotion.group, started ? 'force' : 'normal', nextMotion.index || 0, effectiveBlendSeconds);
+    started = true;
+    const mixAtSeconds = Math.min(durationSeconds * danceMixPoint, durationSeconds - effectiveBlendSeconds);
+    danceTimer = window.setTimeout(replay, Math.max(150, mixAtSeconds * 1000));
   };
   replay();
 }
@@ -640,6 +660,13 @@ window.addEventListener('assistant-settings-change', ((event: CustomEvent) => {
   if (activeGain) activeGain.gain.value = soundVolume * (activeAudioKind === 'effect' ? effectVolume : voiceVolume);
   if (activePanner) activePanner.pan.value = soundBalance;
   idleAnimationsEnabled = settings.idleAnimations !== false;
+  const mixPercent = Number(settings.danceMixPercent);
+  if (Number.isFinite(mixPercent)) danceMixPoint = Math.max(0.5, Math.min(1, mixPercent / 100));
+  const blendSeconds = Number(settings.danceBlendSeconds);
+  if (Number.isFinite(blendSeconds)) danceBlendSeconds = Math.max(0.05, Math.min(2, blendSeconds));
+  danceSequenceMode = settings.danceSequenceMode === 'alternate' || settings.danceSequenceMode === 'random'
+    ? settings.danceSequenceMode
+    : 'repeat';
   reactionsPaused = settings.reactionsPaused === true;
   if (reactionsPaused) {
     stopDanceLoop();

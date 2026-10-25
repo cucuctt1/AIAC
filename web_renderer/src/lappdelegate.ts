@@ -88,8 +88,8 @@ export class LAppDelegate {
     }
   }
 
-  public playAssistantMotion(group: string, priority: 'normal' | 'force' = 'normal', index = 0): void {
-    this._subdelegates[0]?.playAssistantMotion(group, priority, index);
+  public playAssistantMotion(group: string, priority: 'normal' | 'force' = 'normal', index = 0, blendSeconds?: number): void {
+    this._subdelegates[0]?.playAssistantMotion(group, priority, index, blendSeconds);
   }
 
   public setAssistantExpression(expressionId: string): void {

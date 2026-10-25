@@ -31,7 +31,7 @@
     "enabled": true,
     "proactive": true,
     "provider": "tavily",
-    "apiKey": "your_api_key_here",
+    "apiKey": "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",
     "maxResults": 5,
     "searchDepth": "basic",
     "timeoutMs": 9000

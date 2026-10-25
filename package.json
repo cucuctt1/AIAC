@@ -6,6 +6,7 @@
   "scripts": {
     "build:web": "npm --prefix web_renderer run build:prod",
     "build:web:dev": "npm --prefix web_renderer run build",
+    "test": "node --test",
     "start": "node launch.js"
   },
   "devDependencies": {

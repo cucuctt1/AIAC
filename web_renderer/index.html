@@ -86,6 +86,9 @@
       <label class="setting-stack"><span>Idle frame rate</span><select id="settingReducedFps"><option value="60">60 FPS</option><option value="30">30 FPS</option><option value="15">15 FPS</option></select></label>
       <h3 class="setting-category">Behavior</h3>
       <label class="setting-row"><span>Idle animations</span><input id="settingIdle" type="checkbox"></label>
+      <label class="setting-stack"><span>Dance sequence</span><select id="settingDanceSequence"><option value="repeat">Repeat same</option><option value="alternate">Alternate</option><option value="random">Random (repeats allowed)</option></select></label>
+      <label class="setting-row"><span>Dance mix point <output id="settingDanceMixValue">90%</output></span><input id="settingDanceMix" type="range" min="50" max="100" step="1"></label>
+      <label class="setting-row"><span>Dance blend time <output id="settingDanceBlendValue">0.45s</output></span><input id="settingDanceBlend" type="range" min="0.05" max="2" step="0.05"></label>
       <label class="setting-row"><span>Activity reactions</span><input id="settingActivity" type="checkbox"></label>
       <label class="setting-row"><span>Activity comments</span><input id="settingActivityComments" type="checkbox"></label>
       <label class="setting-row"><span>AI song reactions</span><input id="settingSongReactions" type="checkbox"></label>
@@ -137,6 +140,11 @@
     const settingAutoReduceFps = document.getElementById('settingAutoReduceFps');
     const settingReducedFps = document.getElementById('settingReducedFps');
     const settingIdle = document.getElementById('settingIdle');
+    const settingDanceSequence = document.getElementById('settingDanceSequence');
+    const settingDanceMix = document.getElementById('settingDanceMix');
+    const settingDanceMixValue = document.getElementById('settingDanceMixValue');
+    const settingDanceBlend = document.getElementById('settingDanceBlend');
+    const settingDanceBlendValue = document.getElementById('settingDanceBlendValue');
     const settingActivity = document.getElementById('settingActivity');
     const settingActivityComments = document.getElementById('settingActivityComments');
     const settingSongReactions = document.getElementById('settingSongReactions');
@@ -166,7 +174,7 @@
     };
     const initialPack = window.contentPacks.get();
     const settingsStorageKey = 'suisei-settings:' + (initialPack.profileName || 'Default');
-    const defaultSettings = { soundVolume: 0.8, voiceVolume: 1, effectVolume: 0.75, soundBalance: 0, gazeStrength: 1, panelOpacity: 0.76, textSize: 13, renderFps: 30, autoReduceFps: true, reducedFps: 15, idleAnimations: true, activityReactions: true, activityComments: true, songReactions: true, songEnrichment: true, visionEnabled: true, codeCommentFrequency: 'medium', patReactions: true };
+    const defaultSettings = { soundVolume: 0.8, voiceVolume: 1, effectVolume: 0.75, soundBalance: 0, gazeStrength: 1, panelOpacity: 0.76, textSize: 13, renderFps: 30, autoReduceFps: true, reducedFps: 15, idleAnimations: true, danceSequenceMode: 'repeat', danceMixPercent: 90, danceBlendSeconds: 0.45, activityReactions: true, activityComments: true, songReactions: true, songEnrichment: true, visionEnabled: true, codeCommentFrequency: 'medium', patReactions: true };
     let appSettings = { ...defaultSettings };
     let runtimeMuted = false;
     let runtimeReactionsPaused = false;
@@ -192,6 +200,11 @@
       document.documentElement.dataset.autoReduceFps = String(appSettings.autoReduceFps);
       document.documentElement.dataset.reducedFps = String(appSettings.reducedFps);
       settingIdle.checked = appSettings.idleAnimations;
+      settingDanceSequence.value = appSettings.danceSequenceMode;
+      settingDanceMix.value = String(appSettings.danceMixPercent);
+      settingDanceMixValue.value = `${appSettings.danceMixPercent}%`;
+      settingDanceBlend.value = String(appSettings.danceBlendSeconds);
+      settingDanceBlendValue.value = `${Number(appSettings.danceBlendSeconds).toFixed(2)}s`;
       settingActivity.checked = appSettings.activityReactions;
       settingActivityComments.checked = appSettings.activityComments;
       settingSongReactions.checked = appSettings.songReactions;
@@ -273,6 +286,9 @@
     settingAutoReduceFps.addEventListener('change', () => { appSettings.autoReduceFps = settingAutoReduceFps.checked; applySettings(); });
     settingReducedFps.addEventListener('change', () => { appSettings.reducedFps = Number(settingReducedFps.value); applySettings(); });
     settingIdle.addEventListener('change', () => { appSettings.idleAnimations = settingIdle.checked; applySettings(); });
+    settingDanceSequence.addEventListener('change', () => { appSettings.danceSequenceMode = settingDanceSequence.value; applySettings(); });
+    settingDanceMix.addEventListener('input', () => { appSettings.danceMixPercent = Number(settingDanceMix.value); applySettings(); });
+    settingDanceBlend.addEventListener('input', () => { appSettings.danceBlendSeconds = Number(settingDanceBlend.value); applySettings(); });
     settingActivity.addEventListener('change', () => { appSettings.activityReactions = settingActivity.checked; applySettings(); });
     settingActivityComments.addEventListener('change', () => { appSettings.activityComments = settingActivityComments.checked; applySettings(); });
     settingSongReactions.addEventListener('change', () => { appSettings.songReactions = settingSongReactions.checked; applySettings(); });

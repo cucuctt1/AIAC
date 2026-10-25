@@ -47,15 +47,15 @@ export class LAppLive2DManager {
     }
   }
 
-  public playMotion(group: string, priority: 'normal' | 'force' = 'normal', index = 0): void {
+  public playMotion(group: string, priority: 'normal' | 'force' = 'normal', index = 0, blendSeconds?: number): void {
     const model = this._models[0];
     if (!model) return;
     if (priority === 'force') {
       this._pendingAssistantMotion = null;
-      model.startMotion(group, index, LAppDefine.PriorityForce);
+      model.startMotion(group, index, LAppDefine.PriorityForce, undefined, undefined, blendSeconds);
       return;
     }
-    const handle = model.startMotion(group, index, LAppDefine.PriorityNormal);
+    const handle = model.startMotion(group, index, LAppDefine.PriorityNormal, undefined, undefined, blendSeconds);
     if (handle === InvalidMotionQueueEntryHandleValue) {
       this._pendingAssistantMotion = group;
       this._pendingAssistantMotionIndex = index;
